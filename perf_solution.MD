@@ -4,13 +4,13 @@
 
 Ускорить простой запроc, добиться времени выполнения < 10ms
 
-```postgresql
+```sql
 select name from t1 where id = 50000;
 ```
 
 Текущее время
 
-```postgresql
+```sql
 EXPlAIN ANALYZE select name from t1 where id = 50000;
 ```
 
@@ -32,13 +32,13 @@ EXPlAIN ANALYZE select name from t1 where id = 50000;
 Запрос выполняется медленно из-за того, что запрос берет все записи, а потом уже отфильтровывает по одному значению<br>
 Создадим индекс
 
-```postgresql
+```sql
 CREATE INDEX ON t1 (id)
 ```
 
 И замерим время
 
-```postgresql
+```sql
 EXPlAIN ANALYZE select name from t1 where id = 50000;
 ```
 
@@ -56,13 +56,13 @@ EXPlAIN ANALYZE select name from t1 where id = 50000;
 
 Ускорить запрос "max + left join", добиться времени выполнения < 10ms
 
-```postgresql
+```sql
 select max(t2.day) from t2 left join t1 on t2.t_id = t1.id and t1.name like 'a%';
 ```
 
 Текущее время
 
-```postgresql
+```sql
 EXPlAIN ANALYZE select max(t2.day) from t2 left join t1 on t2.t_id = t1.id and t1.name like 'a%';
 ```
 
@@ -90,7 +90,7 @@ EXPlAIN ANALYZE select max(t2.day) from t2 left join t1 on t2.t_id = t1.id and t
 Заметим, что у нас используется LEFT JOIN, а значит в max() попадет вся таблица t2, так что использовать JOIN не имеет смысла<br>
 Создадим index и сделаем запрос без JOIN
 
-```postgresql
+```sql
 CREATE INDEX ON t2 (day);
 EXPlAIN ANALYZE select max(t2.day) from t2;
 ```
@@ -113,13 +113,13 @@ EXPlAIN ANALYZE select max(t2.day) from t2;
 
 Ускорить запрос "anti-join", добиться времени выполнения < 10sec
 
-```postgresql
+```sql
 select day from t2 where t_id not in ( select t1.id from t1 );
 ```
 
 Текущее время
 
-```postgresql
+```sql
 EXPlAIN ANALYZE select day from t2 where t_id not in ( select t1.id from t1 );
 ```
 
@@ -131,7 +131,7 @@ EXPlAIN ANALYZE select day from t2 where t_id not in ( select t1.id from t1 );
 Сложность O(N * M), где N - количество записей в t2, M - количество записей в t1<br>
 Поэтому будем использовать JOIN, чтобы PostgreSQL применила хеширование и сложность была O(N + M)
 
-```postgresql
+```sql
 EXPlAIN ANALYZE select day from t2 left join t1 on t2.t_id = t1.id where t1.id is NULL;
 ```
 
@@ -157,13 +157,13 @@ EXPlAIN ANALYZE select day from t2 left join t1 on t2.t_id = t1.id where t1.id i
 
 Ускорить запрос "semi-join", добиться времени выполнения < 10sec
 
-```postgresql
+```sql
 select day from t2 where t_id in ( select t1.id from t1 where t2.t_id = t1.id) and day > to_char(date_trunc('day',now()- '1 months'::interval),'yyyymmdd');
 ```
 
 Текущее время
 
-```postgresql
+```sql
 EXPlAIN ANALYZE select day from t2 where t_id in (select t1.id from t1, t2 where t2.t_id = t1.id) and day > to_char(date_trunc('day',now()- '1 months'::interval),'yyyymmdd');
 ```
 
@@ -174,7 +174,7 @@ EXPlAIN ANALYZE select day from t2 where t_id in (select t1.id from t1, t2 where
 Запрос, как и в прошлом пункте, выполняется неэффективно N * M<br>
 Используем JOIN, но перед этим создадим индекс
 
-```postgresql
+```sql
 CREATE INDEX ON t2 (day);
 EXPlAIN ANALYZE select day from t2 join t1 on t2.t_id = t1.id and day > to_char(date_trunc('day', now() - '1 months'::interval),'yyyymmdd');
 ```
@@ -254,7 +254,7 @@ progress: 10.0 s, 0.0 tps, lat 0.000 ms stddev 0.000, 0 failed
 
 Решение<br>
 Создаем индекс
-```postgresql
+```sql
 CREATE INDEX ON t1 (id);
 ```
 
